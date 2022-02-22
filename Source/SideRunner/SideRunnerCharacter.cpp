@@ -8,35 +8,61 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include <Runtime/Engine/Classes/Kismet/GameplayStatics.h>
+#include <Runtime/Engine/Private/GameplayStatics.cpp>
 
+using namespace std;
 //////////////////////////////////////////////////////////////////////////
 // ASideRunnerCharacter
 
-#if PLATFORM_IOS || PLATFORM_ANROID
+#if PLATFORM_IOS || PLATFORM_ANDROID
 #include :"src/pugixml.hpp"
 #endif
 
 void ASideRunnerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-#if PLATFORM_IOS || PLATFORM_ANROID
+#if PLATFORM_IOS || PLATFORM_ANDROID
 
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_string(source);
 
 	if (result)
 	{
-		std::cout << "XML [" << source << "] parsed without errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n\n";
+		cout << "XML [" << source << "] parsed without errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n\n";
 }
 	else
 	{
-		std::cout << "XML [" << source << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
-		std::cout << "Error description: " << result.description() << "\n";
-		std::cout << "Error offset: " << result.offset << " (error at [..." << (source + result.offset) << "]\n\n";
+		cout << "XML [" << source << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+		cout << "Error offset: " << result.offset << " (error at [..." << (source + result.offset) << "]\n\n";
 	}
 
 #endif
+	AActor* InteractiveActor;
+
+	TArray <AActor*> OurActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), FName("CubeActor"), OurActors);
+	if (OurActors.Num() > 0)
+	{
+		InteractiveActor = OurActors[0];
+	}
+	UMaterial* Material = nullptr;
+	UStaticMeshComponent* Component = InteractiveActor->GetComponentByClass(UStaticMeshComponent::StaticClass());
+	if (Component)
+	{
+		Material = Component->GetMaterial(0);
+	}
+	UMaterialInstanceDynamic* DynamicMaterialInstance = UMaterialInstanceDynamic::Create(Material, this);
+	if (Component)
+	{
+		Component->SetMaterial(0, DynamicMaterialInstance);
+	}
+	DynamicMaterialInstance->SetScalarParameterValue("", 0.15f);
+	DynamicMaterialInstance->SetTextureParameterValue("", NewTextureRef);
+	DynamicMaterialInstance->SetVectorParameterValue("", FLinearColor(2, 0, 1, 1));
 }
+
 
 ASideRunnerCharacter::ASideRunnerCharacter()
 {
